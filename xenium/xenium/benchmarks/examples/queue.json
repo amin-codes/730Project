@@ -40,6 +40,18 @@
 			"type": "lock_free_730",
 			"reclaimer": (reclaimers.EBR)
 		},
+		"lock_free_730_qsbr" : {
+			"type": "lock_free_730",
+			"reclaimer": (reclaimers.QSBR)
+		},
+		"lock_free_730_static_hp" : {
+			"type": "lock_free_730",
+			"reclaimer": (reclaimers.static-HP)
+		},
+		"lock_free_730_dynamic_hp" : {
+			"type": "lock_free_730",
+			"reclaimer": (reclaimers.dynamic-HP)
+		},
     "vyukov_bounded" : {
       "type": "vyukov_bounded_queue",
       "size": 256,
