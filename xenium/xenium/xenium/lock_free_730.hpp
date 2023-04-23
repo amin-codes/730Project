@@ -94,8 +94,8 @@ public:
   };
 	
 	void enlist(node* value);
-	bool helpInsert(node* home, T key);
-	bool helpRemove(node* home, T key);
+	bool helpInsert(node* home, T& key);
+	bool helpRemove(node* home, T& key);
 	bool contains(T key);
 	bool insert(T key);
 	bool remove(T key);
@@ -140,7 +140,7 @@ void lock_free_730<T, Policies...>::enlist(node* nn) {
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpInsert(node* n, T key) {
+bool lock_free_730<T, Policies...>::helpInsert(node* n, T& key) {
 	node* pred = n;
 	auto curr = n->_next.load(std::memory_order_acquire);
 	
@@ -161,7 +161,7 @@ bool lock_free_730<T, Policies...>::helpInsert(node* n, T key) {
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpRemove(node* n, T key) {
+bool lock_free_730<T, Policies...>::helpRemove(node* n, T& key) {
 	node* pred = n;
 	auto curr = n->_next.load(std::memory_order_acquire);
 	
@@ -208,10 +208,10 @@ bool lock_free_730<T, Policies...>::contains(T key) {
 
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::insert(T key) {
-	T key1 = key;
+	//T key1 = key;
 	node* n = new node(std::move(key), INSERT);
 	enlist(n);
-	bool b = helpInsert(n, key1);
+	bool b = helpInsert(n, n->_value);
 	unsigned char s = b ? DATA : DEAD;
 	std::atomic_uchar newS(s);
 	unsigned char curr = (n->_state.load(std::memory_order_acquire));
@@ -224,10 +224,10 @@ bool lock_free_730<T, Policies...>::insert(T key) {
 
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::remove(T key) {
-	T key1 = key;
+	//T key1 = key;
 	node* n = new node(std::move(key), REMOVE);
 	enlist(n);
-	bool b = helpRemove(n, key1);
+	bool b = helpRemove(n, n->_value);
 	n->_state.store(DEAD, std::memory_order_relaxed);
 	return b;
 }
