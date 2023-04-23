@@ -22,10 +22,10 @@
 //1 = rem
 //2 = DAT
 //3 = INV
-#define INSERT 0
-#define REMOVE 1
-#define DATA 2
-#define DEAD 3
+#define INSERT 1
+#define REMOVE 2
+#define DATA 3
+#define DEAD 4
 
 namespace xenium {
 /**
