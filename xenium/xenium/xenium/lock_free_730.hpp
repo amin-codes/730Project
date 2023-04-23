@@ -120,12 +120,15 @@ lock_free_730<T, Policies...>::~lock_free_730() {
 }
 
 template <class T, class... Policies>
-void lock_free_730<T, Policies...>::enlist(node* n) {
+void lock_free_730<T, Policies...>::enlist(node* nn) {
 	guard_ptr old;
+	marked_ptr n(nn);
+	marked_ptr t(old.get());
 	do {
 		old.acquire(_head, std::memory_order_acquire);
-		n->_next.store((marked_ptr) old.get(), std::memory_order_relaxed);
-	} while (!(_head.compare_exchange_weak((marked_ptr) old.get(), n, std::memory_order_release, std::memory_order_relaxed)))
+		t = marked_ptr(old.get());
+		n->_next.store(t, std::memory_order_relaxed);
+	} while (!(_head.compare_exchange_weak(t, n, std::memory_order_release, std::memory_order_relaxed)))
 }
 
 template <class T, class... Policies>
@@ -134,7 +137,7 @@ bool lock_free_730<T, Policies...>::helpInsert(node* n, T key) {
 	auto curr = n->_next.load(std::memory_order_acquire);
 	
 	while (curr) {
-		unsigned char s = curr->_state;
+		unsigned char s = curr->_state.load(std::memory_order_acquire);
 		if (s == DEAD) {
 			auto succ = curr->_next.load(std::memory_order_acquire);
 			pred->_next->store(succ, std::memory_order_relaxed);
@@ -155,7 +158,7 @@ bool lock_free_730<T, Policies...>::helpRemove(node* n, T key) {
 	auto curr = n->_next.load(std::memory_order_acquire);
 	
 	while (curr) {
-		unsigned char s = curr->_state;
+		unsigned char s = curr->_state.load(std::memory_order_acquire);
 		if (s == DEAD) {
 			auto succ = curr->_next.load(std::memory_order_acquire);
 			pred->_next->store(succ, std::memory_order_relaxed);
@@ -185,7 +188,7 @@ bool lock_free_730<T, Policies...>::contains(T key) {
 	
 	while (curr) {
 		if (curr->_value == key) {
-			unsigned char s = curr->_state;
+			unsigned char s = curr->_state.load(std::memory_order_acquire);
 			if (s != DEAD) {
 				return (s != REMOVE);
 			}
