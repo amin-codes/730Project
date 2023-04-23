@@ -1,1 +1,11 @@
 ./xenium/xenium/build
+.idea/*
+.vscode/*
+.vs/*
+
+./xenium/xenium/doc/latex/*
+./xenium/xenium/doc/html/*
+
+./xenium/xenium/cmake-build-*
+./xenium/xenium/build/*
+./xenium/xenium/out/*
