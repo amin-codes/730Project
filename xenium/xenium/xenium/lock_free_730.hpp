@@ -18,14 +18,14 @@
   #pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif
 
-//0 = ins
-//1 = rem
-//2 = DAT
-//3 = INV
-#define INSERT 1
-#define REMOVE 2
-#define DATA 3
-#define DEAD 4
+//1 = ins
+//2 = rem
+//3 = DAT
+//4 = INV
+constexpr unsigned char INSERT = 1;
+constexpr unsigned char REMOVE = 2;
+constexpr unsigned char DATA = 3;
+constexpr unsigned char DEAD = 4;
 
 namespace xenium {
 /**
@@ -67,34 +67,42 @@ public:
    *
    * @param value
    */
-	void enlist(node& value);
-	bool helpInsert(node& home, T key);
-	bool helpRemove(node& home, T key);
-	bool contains(T key);
-	bool insert(T key);
-	bool remove(T key);
-
-private:
-  struct node;
-
-  using concurrent_ptr = typename reclaimer::template concurrent_ptr<node, 0>;
+	
+	
+	struct node;
+	
+	using concurrent_ptr = typename reclaimer::template concurrent_ptr<node, 0>;
   using marked_ptr = typename concurrent_ptr::marked_ptr;
   using guard_ptr = typename concurrent_ptr::guard_ptr;
 
   struct node : reclaimer::template enable_concurrent_ptr<node> {
-    node() : _value(){};
-    explicit node(T&& v, unsigned char _s) : _value(std::move(v)), _state(_s) {}
-
-    T _value;
+		
+		T _value;
     concurrent_ptr _next;
 		concurrent_ptr _prev;
 		size_t tid;
-		atomic_uchar _state;
+		std::atomic_uchar _state;
+		
+    node() : _value(){};
+    explicit node(T&& v, unsigned char _s) : _value(std::move(v)), _state(_s) {}
+
+    
 		//0 = ins
 		//1 = rem
 		//2 = DAT
 		//3 = INV
   };
+	
+	void enlist(node* value);
+	bool helpInsert(node* home, T key);
+	bool helpRemove(node* home, T key);
+	bool contains(T key);
+	bool insert(T key);
+	bool remove(T key);
+private:
+  
+
+  
 
   alignas(64) concurrent_ptr _head;
   //alignas(64) concurrent_ptr _tail;
@@ -128,7 +136,7 @@ void lock_free_730<T, Policies...>::enlist(node* nn) {
 		old.acquire(_head, std::memory_order_acquire);
 		t = marked_ptr(old.get());
 		n->_next.store(t, std::memory_order_relaxed);
-	} while (!(_head.compare_exchange_weak(t, n, std::memory_order_release, std::memory_order_relaxed)))
+	} while (!(_head.compare_exchange_weak(t, n, std::memory_order_release, std::memory_order_relaxed)));
 }
 
 template <class T, class... Policies>
@@ -140,7 +148,7 @@ bool lock_free_730<T, Policies...>::helpInsert(node* n, T key) {
 		unsigned char s = curr->_state.load(std::memory_order_acquire);
 		if (s == DEAD) {
 			auto succ = curr->_next.load(std::memory_order_acquire);
-			pred->_next->store(succ, std::memory_order_relaxed);
+			pred->_next.store(succ, std::memory_order_relaxed);
 			curr = succ;
 		} else if (curr->_value != key) {
 			pred = curr.get();
@@ -161,7 +169,7 @@ bool lock_free_730<T, Policies...>::helpRemove(node* n, T key) {
 		unsigned char s = curr->_state.load(std::memory_order_acquire);
 		if (s == DEAD) {
 			auto succ = curr->_next.load(std::memory_order_acquire);
-			pred->_next->store(succ, std::memory_order_relaxed);
+			pred->_next.store(succ, std::memory_order_relaxed);
 			curr = succ;
 		} else if (curr->_value != key) {
 			pred = curr.get();
@@ -172,8 +180,8 @@ bool lock_free_730<T, Policies...>::helpRemove(node* n, T key) {
 		} else if (s == REMOVE) {
 			return false;
 		} else if (s == INSERT) {
-			
-			if (curr->_state.compare_exchange_strong(INSERT, REMOVE, std::memory_order_release, std::memory_order_relaxed)) {
+			std::atomic_uchar rem1(REMOVE);
+			if (curr->_state.compare_exchange_strong(s, rem1, std::memory_order_release, std::memory_order_relaxed)) {
 				return true;
 			}
 		}
@@ -200,11 +208,14 @@ bool lock_free_730<T, Policies...>::contains(T key) {
 
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::insert(T key) {
-	node* n = new node(key, INSERT);
+	T key1 = key;
+	node* n = new node(std::move(key), INSERT);
 	enlist(n);
-	bool b = helpInsert(n, key);
+	bool b = helpInsert(n, key1);
 	unsigned char s = b ? DATA : DEAD;
-	if (!(n->_state.compare_exchange_strong(INSERT, s, std::memory_order_release, std::memory_order_relaxed))) {
+	std::atomic_uchar newS(s);
+	unsigned char curr = (n->_state.load(std::memory_order_acquire));
+	if (!(n->_state.compare_exchange_strong(curr, newS, std::memory_order_release, std::memory_order_relaxed))) {
 		helpRemove(n, key);
 		n->_state.store(DEAD, std::memory_order_relaxed);
 	}
@@ -213,9 +224,10 @@ bool lock_free_730<T, Policies...>::insert(T key) {
 
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::remove(T key) {
-	node* n = new node(key, REMOVE);
+	T key1 = key;
+	node* n = new node(std::move(key), REMOVE);
 	enlist(n);
-	bool b = helpRemove(n, key);
+	bool b = helpRemove(n, key1);
 	n->_state.store(DEAD, std::memory_order_relaxed);
 	return b;
 }

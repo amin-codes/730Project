@@ -7,6 +7,32 @@ struct queue_builder {
   static auto create(const tao::config::value&) { return std::make_unique<T>(); }
 };
 
+#ifdef WITH_LOCK_FREE_730_QUEUE
+  #include <xenium/lock_free_730.hpp>
+
+template <class T, class... Policies>
+struct descriptor<xenium::lock_free_730<T, Policies...>> {
+  static tao::json::value generate() {
+    using queue = xenium::lock_free_730<T, Policies...>;
+    return {{"type", "lock_free_730"}, {"reclaimer", descriptor<typename queue::reclaimer>::generate()}};
+  }
+};
+
+namespace { // NOLINT
+template <class T, class... Policies>
+bool try_push(xenium::lock_free_730<T, Policies...>& queue, T item) {
+  return queue.insert(std::move(item));
+	//return true;
+}
+
+template <class T, class... Policies>
+bool try_pop(xenium::lock_free_730<T, Policies...>& queue, T& item) {
+  return queue.remove(item);
+}
+} // namespace
+#endif
+
+
 #ifdef WITH_RAMALHETE_QUEUE
   #include <xenium/ramalhete_queue.hpp>
 

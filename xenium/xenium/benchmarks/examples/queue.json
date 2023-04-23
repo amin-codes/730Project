@@ -36,6 +36,10 @@
       "type": "michael_scott_queue",
       "reclaimer": (reclaimers.EBR)
     },
+		"lock_free_730_ebr" : {
+			"type": "lock_free_730",
+			"reclaimer": (reclaimers.EBR)
+		},
     "vyukov_bounded" : {
       "type": "vyukov_bounded_queue",
       "size": 256,
@@ -74,7 +78,7 @@
     }
   },
   "type": "queue",
-  "ds": (queues.ramalhete),
+  "ds": (queues.lock_free_730_ebr),
   "prefill": 10,
   "warmup": {
     "rounds": 1,

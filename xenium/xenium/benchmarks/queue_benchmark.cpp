@@ -172,6 +172,27 @@ auto benchmark_variations() {
   #endif
 #endif
 
+#ifdef WITH_LOCK_FREE_730_QUEUE
+  #ifdef WITH_GENERIC_EPOCH_BASED
+    make_benchmark_builder<lock_free_730<QUEUE_ITEM, policy::reclaimer<reclamation::epoch_based<>>>>(),
+    make_benchmark_builder<lock_free_730<QUEUE_ITEM, policy::reclaimer<reclamation::new_epoch_based<>>>>(),
+    make_benchmark_builder<lock_free_730<QUEUE_ITEM, policy::reclaimer<reclamation::debra<>>>>(),
+  #endif
+  #ifdef WITH_QUIESCENT_STATE_BASED
+    make_benchmark_builder<lock_free_730<QUEUE_ITEM, policy::reclaimer<reclamation::quiescent_state_based>>>(),
+  #endif
+  #ifdef WITH_HAZARD_POINTER
+    make_benchmark_builder<
+      lock_free_730<QUEUE_ITEM,
+                          policy::reclaimer<reclamation::hazard_pointer<>::with<
+                            policy::allocation_strategy<reclamation::hp_allocation::static_strategy<3>>>>>>(),
+    make_benchmark_builder<
+      lock_free_730<QUEUE_ITEM,
+                          policy::reclaimer<reclamation::hazard_pointer<>::with<
+                            policy::allocation_strategy<reclamation::hp_allocation::dynamic_strategy<3>>>>>>(),
+  #endif
+#endif
+
 #ifdef WITH_MICHAEL_SCOTT_QUEUE
   #ifdef WITH_GENERIC_EPOCH_BASED
     make_benchmark_builder<michael_scott_queue<QUEUE_ITEM, policy::reclaimer<reclamation::epoch_based<>>>>(),
