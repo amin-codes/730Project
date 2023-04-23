@@ -97,7 +97,7 @@ private:
   };
 
   alignas(64) concurrent_ptr _head;
-  alignas(64) concurrent_ptr _tail;
+  //alignas(64) concurrent_ptr _tail;
 };
 
 template <class T, class... Policies>
