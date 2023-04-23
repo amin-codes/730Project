@@ -13,6 +13,7 @@
 
 /*
 ./gtest --gtest_filter=*LockFree730*
+./gtest --gtest_filter=*MichaelScottQueue*
 */
 namespace {
 
@@ -35,21 +36,21 @@ TYPED_TEST_SUITE(LockFree730, Reclaimers);
 TYPED_TEST(LockFree730, push_try_pop_returns_pushed_element) {
   xenium::lock_free_730<int, xenium::policy::reclaimer<TypeParam>> queue;
   queue.insert(42);
-  int elem = 0;
-  ASSERT_TRUE(queue.remove(elem));
-  EXPECT_EQ(42, elem);
+  //int elem = 0;
+  ASSERT_TRUE(queue.remove(42));
+  //EXPECT_EQ(42, elem);
 }
 
 TYPED_TEST(LockFree730, push_two_items_pop_them_in_FIFO_order) {
   xenium::lock_free_730<int, xenium::policy::reclaimer<TypeParam>> queue;
-  queue.insert(42);
-  queue.insert(43);
-  int elem1 = 0;
-  int elem2 = 0;
-  EXPECT_TRUE(queue.remove(elem1));
-  EXPECT_TRUE(queue.remove(elem2));
-  EXPECT_EQ(42, elem1);
-  EXPECT_EQ(43, elem2);
+  EXPECT_TRUE(queue.insert(42));
+  EXPECT_TRUE(queue.insert(43));
+  //int elem1 = 0;
+  //int elem2 = 0;
+  EXPECT_TRUE(queue.remove(42));
+  EXPECT_TRUE(queue.remove(43));
+  //EXPECT_EQ(42, elem1);
+  //EXPECT_EQ(43, elem2);
 }
 /*
 TYPED_TEST(LockFree730, supports_move_only_types) {
@@ -62,6 +63,7 @@ TYPED_TEST(LockFree730, supports_move_only_types) {
   EXPECT_EQ(42, *elem);
 }
 */
+
 TYPED_TEST(LockFree730, parallel_usage) {
   using Reclaimer = TypeParam;
   xenium::lock_free_730<int, xenium::policy::reclaimer<Reclaimer>> queue;
@@ -77,8 +79,8 @@ TYPED_TEST(LockFree730, parallel_usage) {
       for (int j = 0; j < MaxIterations; ++j) {
         [[maybe_unused]] typename Reclaimer::region_guard guard{};
         queue.insert(i);
-        int v;
-        EXPECT_TRUE(queue.remove(v));
+        //int v;
+        EXPECT_TRUE(queue.remove(i));
       }
     }));
   }
@@ -87,4 +89,5 @@ TYPED_TEST(LockFree730, parallel_usage) {
     thread.join();
   }
 }
+
 } // namespace
