@@ -99,7 +99,7 @@ public:
 	bool contains(T key);
 	bool insert(T key);
 	bool remove(T key);
-private:
+public:
   
 
   

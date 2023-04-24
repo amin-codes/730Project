@@ -102,19 +102,30 @@ template <class T>
 void benchmark_thread<T>::initialize(std::uint32_t num_threads) {
   auto id = this->id() & execution::thread_id_mask;
   std::uint64_t cnt = _benchmark.prefill.get_thread_quota(id, num_threads);
-
+	
+	
   [[maybe_unused]] region_guard_t<T> guard{};
+	T& queue = *_benchmark.queue;
   for (std::uint64_t i = 0, j = 0; i < cnt; ++i, j += 2) {
-    if (!try_push(*_benchmark.queue, static_cast<unsigned>(j))) {
+		
+		bool r1 = false;
+		while (!r1) {
+			j = rand() % INT_MAX;
+			r1 = try_push(queue, static_cast<unsigned>(j));
+			j = 0;
+		}
+		//std::cout << "trying to push (" << j << "): " << (r1 ? "y" : "n") << '\n'; 
+    if (!r1) {
       throw initialization_failure();
     }
   }
+	
 }
 
 template <class T>
 void benchmark_thread<T>::run() {
   T& queue = *_benchmark.queue;
-
+	
   const std::uint32_t n = _benchmark.batch_size;
   const std::uint32_t number_of_keys = std::max(1u, _benchmark.number_of_elements * 2);
 
@@ -128,8 +139,8 @@ void benchmark_thread<T>::run() {
     std::uint32_t key = (r >> ratio_bits) % number_of_keys;
 
     if (action < _pop_ratio) {
-      unsigned value;
-      if (try_pop(queue, value)) {
+      //unsigned value;
+      if (try_pop(queue, key)) {
         ++pop;
       }
     } else if (try_push(queue, key)) {
@@ -140,6 +151,7 @@ void benchmark_thread<T>::run() {
 
   push_operations += push;
   pop_operations += pop;
+	
 }
 
 namespace {
