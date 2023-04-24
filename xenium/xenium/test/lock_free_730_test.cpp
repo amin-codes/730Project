@@ -60,7 +60,8 @@ TYPED_TEST(LockFree730, insert_100_random_numbers_and_delete_in_random_order) {
 	while (nums.size()) {
 		int pos = rand() % nums.size();
 		EXPECT_TRUE(queue.remove(nums[pos]));
-		nums.erase(nums.begin() + pos);
+		std::swap(nums[pos], nums[nums.size() - 1]);
+		nums.pop_back();
 	}
 }
 
