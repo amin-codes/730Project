@@ -10,6 +10,7 @@
 
 #include <thread>
 #include <vector>
+#include <set>
 
 /*
 ./gtest --gtest_filter=*LockFree730*
@@ -39,6 +40,28 @@ TYPED_TEST(LockFree730, push_try_pop_returns_pushed_element) {
   //int elem = 0;
   ASSERT_TRUE(queue.remove(42));
   //EXPECT_EQ(42, elem);
+}
+
+TYPED_TEST(LockFree730, insert_100_random_numbers_and_delete_in_random_order) {
+  xenium::lock_free_730<int, xenium::policy::reclaimer<TypeParam>> queue;
+	std::vector<int> nums(100);
+	std::set<int> num2;
+	
+	for (int i = 0; i < 100; i++) {
+		int x = rand() % 1000;
+		while (num2.find(x) != end(num2)) {
+			x = rand() % 1000;
+		}
+		nums[i] = x;
+		num2.insert(x);
+		EXPECT_TRUE(queue.insert(x));
+	}
+	
+	while (nums.size()) {
+		int pos = rand() % nums.size();
+		EXPECT_TRUE(queue.remove(nums[pos]));
+		nums.erase(nums.begin() + pos);
+	}
 }
 
 TYPED_TEST(LockFree730, push_two_items_pop_them_in_FIFO_order) {
