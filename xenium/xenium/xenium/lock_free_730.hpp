@@ -88,7 +88,7 @@ public:
     explicit node(T&& v, unsigned char _s) : _value(std::move(v)), _state(_s) {}
   };
 	
-	void enlist(marked_ptr& value);
+	void enlist(const marked_ptr& value);
 	bool helpInsert(const marked_ptr& home, T& key);
 	bool helpRemove(const marked_ptr& home, T& key);
 	bool contains(T key);
@@ -121,7 +121,7 @@ lock_free_730<T, Policies...>::~lock_free_730() {
 }
 
 template <class T, class... Policies>
-void lock_free_730<T, Policies...>::enlist(marked_ptr& n) {
+void lock_free_730<T, Policies...>::enlist(const marked_ptr& n) {
 	marked_ptr old;
 	//marked_ptr t(old.get());
 	do {
