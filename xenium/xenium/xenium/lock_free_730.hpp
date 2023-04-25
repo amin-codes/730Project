@@ -89,8 +89,8 @@ public:
   };
 	
 	void enlist(marked_ptr& value);
-	bool helpInsert(marked_ptr& home, T& key);
-	bool helpRemove(marked_ptr& home, T& key);
+	bool helpInsert(const marked_ptr& home, T& key);
+	bool helpRemove(const marked_ptr& home, T& key);
 	bool contains(T key);
 	bool insert(T key);
 	bool remove(T key);
@@ -133,7 +133,7 @@ void lock_free_730<T, Policies...>::enlist(marked_ptr& n) {
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpInsert(marked_ptr& n, T& key) {
+bool lock_free_730<T, Policies...>::helpInsert(const marked_ptr& n, T& key) {
 	marked_ptr pred = n;
 	auto curr = n->_next.load(std::memory_order_relaxed);
 	
@@ -154,7 +154,7 @@ bool lock_free_730<T, Policies...>::helpInsert(marked_ptr& n, T& key) {
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpRemove(marked_ptr& n, T& key) {
+bool lock_free_730<T, Policies...>::helpRemove(const marked_ptr& n, T& key) {
 	marked_ptr pred = n;
 	auto curr = n->_next.load(std::memory_order_relaxed);
 	
