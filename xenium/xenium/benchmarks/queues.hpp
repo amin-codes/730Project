@@ -21,15 +21,17 @@ struct descriptor<xenium::lock_free_730<T, Policies...>> {
 namespace { // NOLINT
 template <class T, class... Policies>
 bool try_push(xenium::lock_free_730<T, Policies...>& queue, T item) {
-  return queue.insert(item);
-	//return true;
+  queue.insert(item);
+	return true;
 }
 
 template <class T, class... Policies>
 bool try_pop(xenium::lock_free_730<T, Policies...>& queue, T item) {
-	auto xx = item >= 0 ? queue.remove(queue._head.load(std::memory_order_acquire)->_value) : 1;
+	if (item >= 0) {
+		queue.remove(queue._head.load(std::memory_order_acquire)->_value);
+	}
 	//std::cout << "removed : " << xx << '\n';
-  return xx;
+  return true;
 }
 } // namespace
 #endif

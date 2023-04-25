@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <vector>
+#include <atomic>
 
 using config_t = tao::config::value;
 
@@ -40,6 +41,7 @@ private:
   queue_benchmark<T>& _benchmark;
   static constexpr unsigned ratio_bits = 8;
   unsigned _pop_ratio; // multiple of 2^ratio_bits;
+	//std::atomic_uint counter1;
 };
 
 template <class T>
@@ -108,14 +110,8 @@ void benchmark_thread<T>::initialize(std::uint32_t num_threads) {
 	T& queue = *_benchmark.queue;
   for (std::uint64_t i = 0, j = 0; i < cnt; ++i, j += 2) {
 		
-		bool r1 = false;
-		while (!r1) {
-			j = rand() % INT_MAX;
-			r1 = try_push(queue, static_cast<unsigned>(j));
-			j = 0;
-		}
 		//std::cout << "trying to push (" << j << "): " << (r1 ? "y" : "n") << '\n'; 
-    if (!r1) {
+    if (!try_push(queue, static_cast<unsigned>(j))) {
       throw initialization_failure();
     }
   }
@@ -137,14 +133,17 @@ void benchmark_thread<T>::run() {
     auto r = _randomizer();
     auto action = r & ((1 << ratio_bits) - 1);
     std::uint32_t key = (r >> ratio_bits) % number_of_keys;
+		
 
     if (action < _pop_ratio) {
       //unsigned value;
       if (try_pop(queue, key)) {
         ++pop;
       }
-    } else if (try_push(queue, key)) {
-      ++push;
+    } else {
+			//auto key1 = ++counter1;
+			if (try_push(queue, key)) 
+				++push;
     }
     simulate_workload();
   }

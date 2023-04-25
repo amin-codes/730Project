@@ -1,7 +1,8 @@
-//
-// Copyright (c) 2018-2020 Manuel Pöter.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-//
+
+/*
+Made by students in Don Porter's COMP 730 class
+cmake -DCMAKE_CXX_FLAGS=-pg -DCMAKE_EXE_LINKER_FLAGS=-pg -DCMAKE_SHARED_LINKER_FLAGS=-pg ..
+*/
 
 #ifndef XENIUM_LOCK_FREE_730_HPP
 #define XENIUM_LOCK_FREE_730_HPP
@@ -85,25 +86,17 @@ public:
 		
     node() : _value(){};
     explicit node(T&& v, unsigned char _s) : _value(std::move(v)), _state(_s) {}
-
-    
-		//0 = ins
-		//1 = rem
-		//2 = DAT
-		//3 = INV
   };
 	
-	void enlist(node* value);
-	bool helpInsert(node* home, T& key);
-	bool helpRemove(node* home, T& key);
+	void enlist(marked_ptr& value);
+	bool helpInsert(marked_ptr& home, T& key);
+	bool helpRemove(marked_ptr& home, T& key);
 	bool contains(T key);
 	bool insert(T key);
 	bool remove(T key);
+	
+//only made public for benchmark purposes; should be private otherwise
 public:
-  
-
-  
-
   alignas(64) concurrent_ptr _head;
   //alignas(64) concurrent_ptr _tail;
 };
@@ -128,31 +121,31 @@ lock_free_730<T, Policies...>::~lock_free_730() {
 }
 
 template <class T, class... Policies>
-void lock_free_730<T, Policies...>::enlist(node* nn) {
-	guard_ptr old;
-	marked_ptr n(nn);
-	marked_ptr t(old.get());
+void lock_free_730<T, Policies...>::enlist(marked_ptr& n) {
+	marked_ptr old;
+	//marked_ptr t(old.get());
 	do {
-		old.acquire(_head, std::memory_order_acquire);
-		t = marked_ptr(old.get());
-		n->_next.store(t, std::memory_order_relaxed);
-	} while (!(_head.compare_exchange_weak(t, n, std::memory_order_release, std::memory_order_relaxed)));
+		//old.acquire(_head, std::memory_order_acquire);
+		old = _head.load(std::memory_order_acquire);
+		//t = marked_ptr(old.get());
+		n->_next.store(old, std::memory_order_relaxed);
+	} while (!(_head.compare_exchange_weak(old, n, std::memory_order_release, std::memory_order_relaxed)));
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpInsert(node* n, T& key) {
-	node* pred = n;
-	auto curr = n->_next.load(std::memory_order_acquire);
+bool lock_free_730<T, Policies...>::helpInsert(marked_ptr& n, T& key) {
+	marked_ptr pred = n;
+	auto curr = n->_next.load(std::memory_order_relaxed);
 	
 	while (curr) {
-		unsigned char s = curr->_state.load(std::memory_order_acquire);
+		unsigned char s = curr->_state.load(std::memory_order_relaxed);
 		if (s == DEAD) {
-			auto succ = curr->_next.load(std::memory_order_acquire);
+			auto succ = curr->_next.load(std::memory_order_relaxed);
 			pred->_next.store(succ, std::memory_order_relaxed);
 			curr = succ;
 		} else if (curr->_value != key) {
-			pred = curr.get();
-			curr = curr->_next.load(std::memory_order_acquire);
+			pred = curr;
+			curr = curr->_next.load(std::memory_order_relaxed);
 		} else {
 			return (s == REMOVE);
 		}
@@ -161,19 +154,19 @@ bool lock_free_730<T, Policies...>::helpInsert(node* n, T& key) {
 }
 
 template <class T, class... Policies>
-bool lock_free_730<T, Policies...>::helpRemove(node* n, T& key) {
-	node* pred = n;
-	auto curr = n->_next.load(std::memory_order_acquire);
+bool lock_free_730<T, Policies...>::helpRemove(marked_ptr& n, T& key) {
+	marked_ptr pred = n;
+	auto curr = n->_next.load(std::memory_order_relaxed);
 	
 	while (curr) {
-		unsigned char s = curr->_state.load(std::memory_order_acquire);
+		unsigned char s = curr->_state.load(std::memory_order_relaxed);
 		if (s == DEAD) {
-			auto succ = curr->_next.load(std::memory_order_acquire);
+			auto succ = curr->_next.load(std::memory_order_relaxed);
 			pred->_next.store(succ, std::memory_order_relaxed);
 			curr = succ;
 		} else if (curr->_value != key) {
-			pred = curr.get();
-			curr = curr->_next.load(std::memory_order_acquire);
+			pred = curr;
+			curr = curr->_next.load(std::memory_order_relaxed);
 		} else if (s == DATA) {
 			curr->_state = DEAD;
 			return true;
@@ -192,16 +185,16 @@ bool lock_free_730<T, Policies...>::helpRemove(node* n, T& key) {
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::contains(T key) {
 	
-	auto curr = _head.load(std::memory_order_acquire);
+	auto curr = _head.load(std::memory_order_relaxed);
 	
 	while (curr) {
 		if (curr->_value == key) {
-			unsigned char s = curr->_state.load(std::memory_order_acquire);
+			unsigned char s = curr->_state.load(std::memory_order_relaxed);
 			if (s != DEAD) {
 				return (s != REMOVE);
 			}
 		}
-		curr = curr->_next.load(std::memory_order_acquire);
+		curr = curr->_next.load(std::memory_order_relaxed);
 	}
 	return false;
 }
@@ -209,12 +202,12 @@ bool lock_free_730<T, Policies...>::contains(T key) {
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::insert(T key) {
 	//T key1 = key;
-	node* n = new node(std::move(key), INSERT);
+	marked_ptr n = new node(std::move(key), INSERT);
 	enlist(n);
 	bool b = helpInsert(n, n->_value);
 	unsigned char s = b ? DATA : DEAD;
 	std::atomic_uchar newS(s);
-	unsigned char curr = (n->_state.load(std::memory_order_acquire));
+	unsigned char curr = (n->_state.load(std::memory_order_relaxed));
 	if (!(n->_state.compare_exchange_strong(curr, newS, std::memory_order_release, std::memory_order_relaxed))) {
 		helpRemove(n, key);
 		n->_state.store(DEAD, std::memory_order_relaxed);
@@ -225,7 +218,7 @@ bool lock_free_730<T, Policies...>::insert(T key) {
 template <class T, class... Policies>
 bool lock_free_730<T, Policies...>::remove(T key) {
 	//T key1 = key;
-	node* n = new node(std::move(key), REMOVE);
+	marked_ptr n = new node(std::move(key), REMOVE);
 	enlist(n);
 	bool b = helpRemove(n, n->_value);
 	n->_state.store(DEAD, std::memory_order_relaxed);
