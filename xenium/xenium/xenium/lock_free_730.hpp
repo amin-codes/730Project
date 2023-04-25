@@ -80,7 +80,6 @@ public:
 		
 		T _value;
     concurrent_ptr _next;
-		concurrent_ptr _prev;
 		size_t tid;
 		std::atomic_uchar _state;
 		

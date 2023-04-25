@@ -100,13 +100,13 @@
   "runtime": 1000,
   "threads": {
     "producer": {
-      "count": 4,
+      "count": 10,
       "pop_ratio": 0.1,
       "workload": 100
     },
     "myconsumer": {
       "type": "consumer",
-      "count": 4,
+      "count": 10,
       "push_ratio": 0.1,
       "workload": 100
     }
