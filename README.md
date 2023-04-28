@@ -3,6 +3,8 @@ by Ernest Ermongkonchai, Amin Zamani, Alissa
 
 Our Adapted Lock-Free Linked List is located at `xenium/xenium/xenium/lock_free_730.hpp`.
 
+The gtests can be found at `xenium/xenium/test/lock_free_730_test.cpp`.
+
 # How to build
 
 Ensure that you can build C++ projects (eg. have gcc and cmake).
