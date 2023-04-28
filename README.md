@@ -1,0 +1,39 @@
+# COMP 730 Project
+by Ernest Ermongkonchai, Amin Zamani, Alissa
+
+Our Adapted Lock-Free Linked List is located at `xenium/xenium/xenium/lock_free_730.hpp`.
+
+# How to build
+
+Ensure that you can build C++ projects (eg. have gcc and cmake).
+
+In terminal where `730Project` is:
+```
+cd xenium/xenium
+mkdir build
+cd build
+cmake ..
+make benchmark
+make gtest
+```
+# How to run gtest
+Ensure that you have build the project with the instruction above.
+
+In terminal where `730Project` is:
+```
+cd xenium/xenium/build
+./gtest --gtest_filter=*LockFree730*  
+```
+
+# How to run benchmark
+Ensure that you have build the project with the instruction above.
+
+In terminal where `730Project` is:
+
+```
+cd xenium/xenium/build
+./benchmark <benchmark config file.json path> 
+```
+
+For example, if you want to run `xenium/xenium/benchmarks/examples/EBR.json`, inside the `xenium/xenium/build` folder, you can simply run `./benchmark ../benchmarks/examples/EBR.json`
+
